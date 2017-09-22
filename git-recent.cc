@@ -11,9 +11,10 @@ struct branch {
 	std::string name;
 	bool current;
 	time_t last;
+	std::string describe;
 
-	branch(std::string n, bool c, time_t l)
-		: name(n), current(c), last(l)
+	branch(std::string n, bool c, time_t l, std::string d)
+		: name(n), current(c), last(l), describe(d)
 	{
 	}
 
@@ -27,12 +28,14 @@ enum {
 	OPTION_HELP,
 	OPTION_ALL,
 	OPTION_REMOTE,
+	OPTION_DESCRIBE,
 };
 
 static struct option options[] = {
 	{ "help",		no_argument,		0, OPTION_HELP           },
 	{ "all",		no_argument,		0, OPTION_ALL            },
 	{ "remote",		required_argument,	0, OPTION_REMOTE         },
+	{ "describe",		no_argument,		0, OPTION_DESCRIBE       },
 	{ 0,			0,			0, 0                     }
 };
 
@@ -43,6 +46,7 @@ static void usage(const char *cmd)
 	std::cout << "  --help, -h             Print this help message" << std::endl;
 	std::cout << "  --all, -a              Also show remote branches" << std::endl;
 	std::cout << "  --remote, -r <remote>  Only show branches of a given remote" << std::endl;
+	std::cout << "  --describe, -d         Describe the top-commits of the branches" << std::endl;
 }
 
 bool is_prefix(std::string str, std::string prefix)
@@ -61,6 +65,7 @@ int main(int argc, char **argv)
 	git_repository *repo = NULL;
 	git_branch_iterator *it;
 	git_branch_t ref_type;
+	bool describe = false;
 	git_reference *ref;
 	std::string prefix;
 	int error;
@@ -68,7 +73,7 @@ int main(int argc, char **argv)
 	while (true) {
 		int c, opt_idx;
 
-		c = getopt_long(argc, argv, "har:", options, &opt_idx);
+		c = getopt_long(argc, argv, "har:d", options, &opt_idx);
 		if (c == -1)
 			break;
 
@@ -87,6 +92,10 @@ int main(int argc, char **argv)
 			flags = GIT_BRANCH_REMOTE;
 			prefix = std::string(optarg) + '/';
 			break;
+		case OPTION_DESCRIBE:
+		case 'd':
+			describe = true;
+			break;
 		default:
 			usage(argv[0]);
 			return 1;
@@ -103,6 +112,7 @@ int main(int argc, char **argv)
 		goto err;
 
 	while (git_branch_next(&ref, &ref_type, it) == 0) {
+		std::string base = "";
 		git_commit *commit;
 		const git_oid *oid;
 		std::string sname;
@@ -124,13 +134,42 @@ int main(int argc, char **argv)
 			continue;
 		}
 
+		if (describe) {
+			git_describe_options desc_opts = GIT_DESCRIBE_OPTIONS_INIT;
+			git_describe_format_options fmt_opts;
+			git_describe_result *desc;
+			git_buf buf = { 0 };
+			git_object *obj;
+
+			error = git_object_lookup(&obj, repo, oid, GIT_OBJ_COMMIT);
+			if (error < 0)
+				goto err;
+
+			error = git_describe_commit(&desc, obj, &desc_opts);
+			if (error < 0)
+				goto err;
+
+			fmt_opts.version                = GIT_DESCRIBE_OPTIONS_VERSION;
+			fmt_opts.abbreviated_size       = 0;
+			fmt_opts.always_use_long_format = 0;
+			fmt_opts.dirty_suffix           = "";
+
+			git_describe_format(&buf, desc, &fmt_opts);
+
+			base = buf.ptr;
+
+			git_describe_result_free(desc);
+			git_object_free(obj);
+		}
+
 		error = git_commit_lookup(&commit, repo, oid);
 		if (error < 0)
 			goto err;
 
 		results.emplace_back(branch(name,
 					    (git_branch_is_head(ref) == 1),
-					    static_cast<time_t>(git_commit_time(commit))));
+					    static_cast<time_t>(git_commit_time(commit)),
+					    base));
 
 		git_commit_free(commit);
 	}
@@ -146,7 +185,10 @@ int main(int argc, char **argv)
 
 		tm = localtime(&b.last);
 		strftime(t, 32, "%Y-%m-%d %H:%M:%S", tm);
-		std::cout << prefix << std::left << std::setw(max_len + 2) << b.name << "(" << t << ")" << std::endl;
+		std::cout << prefix << std::left << std::setw(max_len + 2) << b.name << "(" << t << ")";
+		if (b.describe.size() > 0)
+			std::cout << " [based on " << b.describe << "]";
+		std::cout << std::endl;
 	}
 
 	git_repository_free(repo);
