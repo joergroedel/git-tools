@@ -6,7 +6,7 @@ INSTALL_DIR=~/bin/
 git-recent: git-recent.o
 	$(CXX) -o $@ $+ -lgit2
 
-install:
+install: $(TARGETS)
 	install -b -D -m 755 git-recent $(INSTALL_DIR)
 
 clean:
