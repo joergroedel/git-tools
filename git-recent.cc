@@ -12,9 +12,10 @@ struct branch {
 	bool current;
 	time_t last;
 	std::string describe;
+	const git_oid *oid;
 
-	branch(std::string n, bool c, time_t l, std::string d)
-		: name(n), current(c), last(l), describe(d)
+	branch(std::string n, bool c, time_t l, std::string d, const git_oid *o)
+		: name(n), current(c), last(l), describe(d), oid(o)
 	{
 	}
 
@@ -169,7 +170,8 @@ int main(int argc, char **argv)
 		results.emplace_back(branch(name,
 					    (git_branch_is_head(ref) == 1),
 					    static_cast<time_t>(git_commit_time(commit)),
-					    base));
+					    base,
+					    oid));
 
 		git_commit_free(commit);
 	}
