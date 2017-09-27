@@ -1,4 +1,4 @@
-CXX=g++-6
+CXX=g++
 CXXFLAGS=-O3 -std=c++11
 TARGETS=git-recent
 INSTALL_DIR=~/bin/
