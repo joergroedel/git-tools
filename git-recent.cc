@@ -7,6 +7,8 @@
 #include <getopt.h>
 #include <git2.h>
 
+#define CLEARLINE	"\033[1K\r"
+
 struct branch {
 	std::string name;
 	bool current;
@@ -152,12 +154,18 @@ int main(int argc, char **argv)
 	std::sort(results.begin(), results.end());
 
 	if (describe) {
+		auto total = results.size();
+		decltype(total) current = 1;
+
 		for (auto &b : results) {
 			git_describe_options desc_opts = GIT_DESCRIBE_OPTIONS_INIT;
 			git_describe_format_options fmt_opts;
 			git_describe_result *desc;
 			git_buf buf = { 0 };
 			git_object *obj;
+
+			std::cout << CLEARLINE << "Describing branch " << b.name;
+			std::cout << " (" << current++ << '/' << total << ')'<< std::flush;
 
 			error = git_object_lookup(&obj, repo, b.oid, GIT_OBJ_COMMIT);
 			if (error < 0)
@@ -179,6 +187,8 @@ int main(int argc, char **argv)
 			git_describe_result_free(desc);
 			git_object_free(obj);
 		}
+
+		std::cout << CLEARLINE << std::flush;
 	}
 
 	for (auto &b : results) {
