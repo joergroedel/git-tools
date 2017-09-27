@@ -168,12 +168,14 @@ int main(int argc, char **argv)
 			std::cout << " (" << current++ << '/' << total << ')'<< std::flush;
 
 			error = git_object_lookup(&obj, repo, b.oid, GIT_OBJ_COMMIT);
-			if (error < 0)
+			if (error < 0) {
+				std::cout << CLEARLINE << std::flush;
 				goto err;
+			}
 
 			error = git_describe_commit(&desc, obj, &desc_opts);
 			if (error < 0)
-				goto err;
+				continue;
 
 			fmt_opts.version                = GIT_DESCRIBE_OPTIONS_VERSION;
 			fmt_opts.abbreviated_size       = 0;
