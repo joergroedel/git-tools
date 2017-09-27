@@ -14,8 +14,8 @@ struct branch {
 	std::string describe;
 	const git_oid *oid;
 
-	branch(std::string n, bool c, time_t l, std::string d, const git_oid *o)
-		: name(n), current(c), last(l), describe(d), oid(o)
+	branch(std::string n, bool c, time_t l, const git_oid *o)
+		: name(n), current(c), last(l), describe(), oid(o)
 	{
 	}
 
@@ -113,7 +113,6 @@ int main(int argc, char **argv)
 		goto err;
 
 	while (git_branch_next(&ref, &ref_type, it) == 0) {
-		std::string base = "";
 		git_commit *commit;
 		const git_oid *oid;
 		std::string sname;
@@ -135,14 +134,32 @@ int main(int argc, char **argv)
 			continue;
 		}
 
-		if (describe) {
+
+		error = git_commit_lookup(&commit, repo, oid);
+		if (error < 0)
+			goto err;
+
+		results.emplace_back(branch(name,
+					    (git_branch_is_head(ref) == 1),
+					    static_cast<time_t>(git_commit_time(commit)),
+					    oid));
+
+		git_commit_free(commit);
+	}
+
+	git_branch_iterator_free(it);
+
+	std::sort(results.begin(), results.end());
+
+	if (describe) {
+		for (auto &b : results) {
 			git_describe_options desc_opts = GIT_DESCRIBE_OPTIONS_INIT;
 			git_describe_format_options fmt_opts;
 			git_describe_result *desc;
 			git_buf buf = { 0 };
 			git_object *obj;
 
-			error = git_object_lookup(&obj, repo, oid, GIT_OBJ_COMMIT);
+			error = git_object_lookup(&obj, repo, b.oid, GIT_OBJ_COMMIT);
 			if (error < 0)
 				goto err;
 
@@ -157,28 +174,12 @@ int main(int argc, char **argv)
 
 			git_describe_format(&buf, desc, &fmt_opts);
 
-			base = buf.ptr;
+			b.describe = buf.ptr;
 
 			git_describe_result_free(desc);
 			git_object_free(obj);
 		}
-
-		error = git_commit_lookup(&commit, repo, oid);
-		if (error < 0)
-			goto err;
-
-		results.emplace_back(branch(name,
-					    (git_branch_is_head(ref) == 1),
-					    static_cast<time_t>(git_commit_time(commit)),
-					    base,
-					    oid));
-
-		git_commit_free(commit);
 	}
-
-	git_branch_iterator_free(it);
-
-	std::sort(results.begin(), results.end());
 
 	for (auto &b : results) {
 		std::string prefix = b.current ? "* " : "  ";
