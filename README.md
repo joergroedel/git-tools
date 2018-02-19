@@ -9,3 +9,10 @@ Use the -d or --decribe option to also describe all branches, but note
 that this might take a while.
 
 To get an overview of the available options, use the --help or -h option.
+
+
+git-ff - Fast-Forward Your Branches
+===================================
+
+This is a tool to quickly fast-forward branches in your repository. It can
+fast-forward checked-out and non-checkout-out branches.
