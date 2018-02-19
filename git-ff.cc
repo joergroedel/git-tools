@@ -1,10 +1,9 @@
 /*
  * TODO:
- *		- Implement --all option
  *		- Implement progress indicator for checkout
  *		- More testing
  *		- Man page
- 		- Documentation
+ *		- Documentation
  */
 #include <algorithm>
 #include <iostream>
@@ -114,28 +113,6 @@ have_ref:
 	goto out;
 }
 
-enum {
-	OPTION_HELP,
-	OPTION_LIST,
-	OPTION_NOT,
-	OPTION_ONLY,
-};
-
-static struct option options[] = {
-	{ "help",		no_argument,		0, OPTION_HELP           },
-	{ "list",		no_argument,		0, OPTION_LIST           },
-	{ "not",		no_argument,		0, OPTION_NOT            },
-	{ "only",		no_argument,		0, OPTION_ONLY           },
-	{ 0,			0,			0, 0                     }
-};
-
-void usage(const char *cmd)
-{
-	std::cout << "Usage: " << cmd << " [options] <branches...> <target>" << std::endl;
-	std::cout << "Options:" << std::endl;
-	std::cout << "  --help, -h             Print this help message" << std::endl;
-}
-
 struct result {
 	bool ff;
 	bool current;
@@ -151,13 +128,14 @@ struct parameters {
 	bool only_ff;
 	bool list;
 	bool verbose;
+	bool all;
 
 	std::set<std::string> branches;
 	const char *target;
 
 	parameters()
 		: not_ff(false), only_ff(false), list(false),
-		  verbose(true)
+		  verbose(true), all(false)
 	{}
 };
 
@@ -283,7 +261,7 @@ static int do_ff(git_repository *repo, parameters &params)
 	if (error < 0)
 		goto out;
 
-	head_only = params.branches.empty();
+	head_only = params.branches.empty() && !params.all;
 
 	while (git_branch_next(&ref, &ref_type, it) == 0) {
 		const git_oid *branch_oid;
@@ -297,7 +275,7 @@ static int do_ff(git_repository *repo, parameters &params)
 		if (error < 0)
 			goto out;
 
-		if (!params.branches.empty() &&
+		if (!params.all && !params.branches.empty() &&
 		     params.branches.find(name) == params.branches.end())
 			continue;
 
@@ -365,10 +343,35 @@ out:
 	return error;
 }
 
+enum {
+	OPTION_HELP,
+	OPTION_LIST,
+	OPTION_NOT,
+	OPTION_ONLY,
+	OPTION_ALL,
+};
+
+static struct option options[] = {
+	{ "help",		no_argument,		0, OPTION_HELP           },
+	{ "list",		no_argument,		0, OPTION_LIST           },
+	{ "not",		no_argument,		0, OPTION_NOT            },
+	{ "only",		no_argument,		0, OPTION_ONLY           },
+	{ "all",		no_argument,		0, OPTION_ALL            },
+	{ 0,			0,			0, 0                     }
+};
+
+void usage(const char *cmd)
+{
+	std::cout << "Usage: " << cmd << " [options] <branches...> <target>" << std::endl;
+	std::cout << "Options:" << std::endl;
+	std::cout << "  --help, -h             Print this help message" << std::endl;
+}
+
 int main(int argc, char **argv)
 {
 	git_repository *repo = NULL;
 	const char *target = NULL;
+	bool opt_error = false;
 	int error;
 
 	struct parameters params;
@@ -376,7 +379,7 @@ int main(int argc, char **argv)
 	while (true) {
 		int c, opt_idx;
 
-		c = getopt_long(argc, argv, "hlonu", options, &opt_idx);
+		c = getopt_long(argc, argv, "hlonua", options, &opt_idx);
 		if (c == -1)
 			break;
 
@@ -402,6 +405,10 @@ int main(int argc, char **argv)
 			params.not_ff  = true;
 			params.verbose = false;
 			break;
+		case OPTION_ALL:
+		case 'a':
+			params.all = true;
+			break;
 		default:
 			usage(argv[0]);
 			return 1;
@@ -416,15 +423,28 @@ int main(int argc, char **argv)
 	}
 
 	if (target == NULL) {
-		std::cerr << "Need a fast-forward target" << std::endl;
-		usage(argv[0]);
-		return 1;
+		std::cerr << "Error: Need a fast-forward target" << std::endl;
+		opt_error = true;
 	}
 
 	params.target = target;
 
 	if (!params.list && (params.not_ff || params.only_ff)) {
 		std::cerr << "Error: --only and --not require --list" << std::endl;
+		opt_error = true;
+	}
+
+	if (params.all && params.list) {
+		std::cerr << "Error: --all not possible with --list" << std::endl;
+		opt_error = true;
+	}
+
+	if (params.all && !params.branches.empty()) {
+		std::cerr << "Error: Can not specify branches and --all" << std::endl;
+		opt_error = true;
+	}
+
+	if (opt_error) {
 		usage(argv[0]);
 		return 1;
 	}
