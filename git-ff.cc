@@ -378,7 +378,14 @@ void usage(const char *cmd)
 {
 	std::cout << "Usage: " << cmd << " [options] <branches...> <target>" << std::endl;
 	std::cout << "Options:" << std::endl;
-	std::cout << "  --help, -h             Print this help message" << std::endl;
+	std::cout << "  --help, -h  Print this help message" << std::endl;
+	std::cout << "  --all,  -a  Tries to fast-forward every branch in the repository" << std::endl;
+	std::cout << "  --list, -l  List branches and checks if they can be" << std::endl;
+	std::cout << "              fast-forwared to <target>" << std::endl;
+	std::cout << "  --not,  -n  With --list, shows only branches that can not be" << std::endl;
+	std::cout << "              fast-forwared to <target>" << std::endl;
+	std::cout << "  --only, -o  With --list, shows only branches that can be" << std::endl;
+	std::cout << "              fast-forwared to <target>" << std::endl;
 }
 
 int main(int argc, char **argv)
