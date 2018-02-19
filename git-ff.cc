@@ -1,7 +1,5 @@
 /*
  * TODO:
- *		- Implement progress indicator for checkout
- *		- More testing
  *		- Man page
  *		- Documentation
  */
@@ -14,6 +12,8 @@
 
 #include <getopt.h>
 #include <git2.h>
+
+#define CLEARLINE	"\033[1K\r"
 
 struct cb_payload {
 	const char *name;
@@ -240,6 +240,18 @@ static int notify_cb(git_checkout_notify_t why,
 
 	return 1;
 }
+static void checkout_progress_cb(const char *path,
+				 size_t completed_steps,
+				 size_t total_steps,
+				 void *payload)
+{
+	unsigned per_cent = (completed_steps * 100) / total_steps;
+
+	std::cout << CLEARLINE;
+	std::cout << "Checking out files: " << per_cent << "% ";
+	std::cout << "(" << completed_steps << '/' << total_steps << ')';
+	std::cout << std::flush;
+}
 
 static int do_ff(git_repository *repo, parameters &params)
 {
@@ -314,6 +326,7 @@ static int do_ff(git_repository *repo, parameters &params)
 			opts.notify_flags	= GIT_CHECKOUT_NOTIFY_CONFLICT;
 			opts.notify_cb		= notify_cb;
 			opts.notify_payload	= (void *)name;
+			opts.progress_cb	= checkout_progress_cb;
 
 			error = git_checkout_tree(repo, obj, &opts);
 			if (error < 0) {
@@ -332,6 +345,7 @@ static int do_ff(git_repository *repo, parameters &params)
 		if (error < 0)
 			goto out;
 
+		std::cout << CLEARLINE;
 		std::cout << "fast-forwared " << name << " to " << params.target << std::endl;
 
 		git_reference_free(new_ref);
