@@ -30,6 +30,7 @@ struct branch {
 enum {
 	OPTION_HELP,
 	OPTION_ALL,
+	OPTION_REPO,
 	OPTION_REMOTE,
 	OPTION_DESCRIBE,
 	OPTION_LONG,
@@ -38,6 +39,7 @@ enum {
 static struct option options[] = {
 	{ "help",		no_argument,		0, OPTION_HELP           },
 	{ "all",		no_argument,		0, OPTION_ALL            },
+	{ "repo",		required_argument,	0, OPTION_REPO		 },
 	{ "remote",		required_argument,	0, OPTION_REMOTE         },
 	{ "describe",		no_argument,		0, OPTION_DESCRIBE       },
 	{ "long",		no_argument,		0, OPTION_LONG		 },
@@ -50,6 +52,7 @@ static void usage(const char *cmd)
 	std::cout << "Options:" << std::endl;
 	std::cout << "  --help, -h             Print this help message" << std::endl;
 	std::cout << "  --all, -a              Also show remote branches" << std::endl;
+	std::cout << "  --repo <path>          Path to git repository" << std::endl;
 	std::cout << "  --remote, -r <remote>  Only show branches of a given remote" << std::endl;
 	std::cout << "  --describe, -d         Describe the top-commits of the branches" << std::endl;
 	std::cout << "  --long, -l             Use long format for describe" << std::endl;
@@ -69,6 +72,7 @@ int main(int argc, char **argv)
 	std::string::size_type max_len = 0;
 	std::vector<branch> results;
 	git_repository *repo = NULL;
+	std::string repo_path = ".";
 	bool describe_long = false;
 	git_branch_iterator *it;
 	std::string desc_prefix;
@@ -95,6 +99,9 @@ int main(int argc, char **argv)
 		case 'a':
 			flags = GIT_BRANCH_ALL;
 			break;
+		case OPTION_REPO:
+			repo_path = optarg;
+			break;
 		case OPTION_REMOTE:
 		case 'r':
 			flags = GIT_BRANCH_REMOTE;
@@ -115,7 +122,7 @@ int main(int argc, char **argv)
 	}
 	git_libgit2_init();
 
-	error = git_repository_open(&repo, ".");
+	error = git_repository_open(&repo, repo_path.c_str());
 	if (error < 0)
 		goto err;
 
