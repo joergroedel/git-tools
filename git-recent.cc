@@ -32,6 +32,7 @@ enum {
 	OPTION_ALL,
 	OPTION_REMOTE,
 	OPTION_DESCRIBE,
+	OPTION_LONG,
 };
 
 static struct option options[] = {
@@ -39,6 +40,7 @@ static struct option options[] = {
 	{ "all",		no_argument,		0, OPTION_ALL            },
 	{ "remote",		required_argument,	0, OPTION_REMOTE         },
 	{ "describe",		no_argument,		0, OPTION_DESCRIBE       },
+	{ "long",		no_argument,		0, OPTION_LONG		 },
 	{ 0,			0,			0, 0                     }
 };
 
@@ -50,6 +52,7 @@ static void usage(const char *cmd)
 	std::cout << "  --all, -a              Also show remote branches" << std::endl;
 	std::cout << "  --remote, -r <remote>  Only show branches of a given remote" << std::endl;
 	std::cout << "  --describe, -d         Describe the top-commits of the branches" << std::endl;
+	std::cout << "  --long, -l             Use long format for describe" << std::endl;
 }
 
 bool is_prefix(std::string str, std::string prefix)
@@ -66,7 +69,9 @@ int main(int argc, char **argv)
 	std::string::size_type max_len = 0;
 	std::vector<branch> results;
 	git_repository *repo = NULL;
+	bool describe_long = false;
 	git_branch_iterator *it;
+	std::string desc_prefix;
 	git_branch_t ref_type;
 	bool describe = false;
 	git_reference *ref;
@@ -76,7 +81,7 @@ int main(int argc, char **argv)
 	while (true) {
 		int c, opt_idx;
 
-		c = getopt_long(argc, argv, "har:d", options, &opt_idx);
+		c = getopt_long(argc, argv, "har:dl", options, &opt_idx);
 		if (c == -1)
 			break;
 
@@ -98,6 +103,10 @@ int main(int argc, char **argv)
 		case OPTION_DESCRIBE:
 		case 'd':
 			describe = true;
+			break;
+		case OPTION_LONG:
+		case 'l':
+			describe_long = true;
 			break;
 		default:
 			usage(argv[0]);
@@ -178,8 +187,15 @@ int main(int argc, char **argv)
 				continue;
 
 			fmt_opts.version                = GIT_DESCRIBE_OPTIONS_VERSION;
-			fmt_opts.abbreviated_size       = 0;
-			fmt_opts.always_use_long_format = 0;
+			if (describe_long) {
+				fmt_opts.abbreviated_size       = 12;
+				fmt_opts.always_use_long_format = 1;
+				desc_prefix = "branch at ";
+			} else {
+				fmt_opts.abbreviated_size       = 0;
+				fmt_opts.always_use_long_format = 0;
+				desc_prefix = "based on ";
+			}
 			fmt_opts.dirty_suffix           = "";
 
 			git_describe_format(&buf, desc, &fmt_opts);
@@ -202,7 +218,7 @@ int main(int argc, char **argv)
 		strftime(t, 32, "%Y-%m-%d %H:%M:%S", tm);
 		std::cout << prefix << std::left << std::setw(max_len + 2) << b.name << "(" << t << ")";
 		if (b.describe.size() > 0)
-			std::cout << " [based on " << b.describe << "]";
+			std::cout << " ["<< desc_prefix << b.describe << "]";
 		std::cout << std::endl;
 	}
 
