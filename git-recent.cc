@@ -18,6 +18,8 @@
 #include <getopt.h>
 #include <git2.h>
 
+#include "version.h"
+
 #define CLEARLINE	"\033[1K\r"
 
 struct branch {
@@ -40,6 +42,7 @@ struct branch {
 
 enum {
 	OPTION_HELP,
+	OPTION_VERSION,
 	OPTION_ALL,
 	OPTION_REMOTE,
 	OPTION_DESCRIBE,
@@ -48,6 +51,7 @@ enum {
 
 static struct option options[] = {
 	{ "help",		no_argument,		0, OPTION_HELP           },
+	{ "version",		no_argument,		0, OPTION_VERSION        },
 	{ "all",		no_argument,		0, OPTION_ALL            },
 	{ "remote",		required_argument,	0, OPTION_REMOTE         },
 	{ "describe",		no_argument,		0, OPTION_DESCRIBE       },
@@ -60,6 +64,7 @@ static void usage(const char *cmd)
 	std::cout << "Usage: " << cmd << " [options]" << std::endl;
 	std::cout << "Options:" << std::endl;
 	std::cout << "  --help, -h             Print this help message" << std::endl;
+	std::cout << "  --version              Print version and exit" << std::endl;
 	std::cout << "  --all, -a              Also show remote branches" << std::endl;
 	std::cout << "  --remote, -r <remote>  Only show branches of a given remote" << std::endl;
 	std::cout << "  --describe, -d         Describe the top-commits of the branches" << std::endl;
@@ -99,6 +104,10 @@ int main(int argc, char **argv)
 		case OPTION_HELP:
 		case 'h':
 			usage(argv[0]);
+			return 0;
+			break;
+		case OPTION_VERSION:
+			std::cout << "git-recent version " << GITTTOOLSVERSION << std::endl;
 			return 0;
 			break;
 		case OPTION_ALL:

@@ -19,6 +19,8 @@
 #include <getopt.h>
 #include <git2.h>
 
+#include "version.h"
+
 #define CLEARLINE	"\033[1K\r"
 
 struct cb_payload {
@@ -365,6 +367,7 @@ out:
 
 enum {
 	OPTION_HELP,
+	OPTION_VERSION,
 	OPTION_LIST,
 	OPTION_NOT,
 	OPTION_ONLY,
@@ -373,6 +376,7 @@ enum {
 
 static struct option options[] = {
 	{ "help",		no_argument,		0, OPTION_HELP           },
+	{ "version",		no_argument,		0, OPTION_VERSION        },
 	{ "list",		no_argument,		0, OPTION_LIST           },
 	{ "not",		no_argument,		0, OPTION_NOT            },
 	{ "only",		no_argument,		0, OPTION_ONLY           },
@@ -385,6 +389,7 @@ void usage(const char *cmd)
 	std::cout << "Usage: " << cmd << " [options] <branches...> <target>" << std::endl;
 	std::cout << "Options:" << std::endl;
 	std::cout << "  --help, -h  Print this help message" << std::endl;
+	std::cout << "  --version   Print version and exit" << std::endl;
 	std::cout << "  --all,  -a  Tries to fast-forward every branch in the repository" << std::endl;
 	std::cout << "  --list, -l  List branches and checks if they can be" << std::endl;
 	std::cout << "              fast-forwared to <target>" << std::endl;
@@ -414,6 +419,10 @@ int main(int argc, char **argv)
 		case OPTION_HELP:
 		case 'h':
 			usage(argv[0]);
+			return 0;
+			break;
+		case OPTION_VERSION:
+			std::cout << "git-ff version " << GITTTOOLSVERSION << std::endl;
 			return 0;
 			break;
 		case OPTION_LIST:
