@@ -45,6 +45,7 @@ enum {
 	OPTION_REMOTE,
 	OPTION_DESCRIBE,
 	OPTION_LONG,
+	OPTION_SHORT,
 };
 
 static struct option options[] = {
@@ -54,6 +55,7 @@ static struct option options[] = {
 	{ "remote",		required_argument,	0, OPTION_REMOTE         },
 	{ "describe",		no_argument,		0, OPTION_DESCRIBE       },
 	{ "long",		no_argument,		0, OPTION_LONG		 },
+	{ "short",		no_argument,		0, OPTION_SHORT          },
 	{ 0,			0,			0, 0                     }
 };
 
@@ -67,6 +69,7 @@ static void usage(const char *cmd)
 	std::cout << "  --remote, -r <remote>  Only show branches of a given remote" << std::endl;
 	std::cout << "  --describe, -d         Describe the top-commits of the branches" << std::endl;
 	std::cout << "  --long, -l             Use long format for describe" << std::endl;
+	std::cout << "  --short, -s            Print sorted branch names only" << std::endl;
 }
 
 bool is_prefix(std::string str, std::string prefix)
@@ -85,6 +88,7 @@ int main(int argc, char **argv)
 	git_repository *repo = NULL;
 	std::string repo_path = ".";
 	bool describe_long = false;
+	bool print_short = false;
 	git_branch_iterator *it;
 	std::string desc_prefix;
 	git_branch_t ref_type;
@@ -96,7 +100,7 @@ int main(int argc, char **argv)
 	while (true) {
 		int c, opt_idx;
 
-		c = getopt_long(argc, argv, "har:dl", options, &opt_idx);
+		c = getopt_long(argc, argv, "har:dls", options, &opt_idx);
 		if (c == -1)
 			break;
 
@@ -125,6 +129,9 @@ int main(int argc, char **argv)
 		case OPTION_LONG:
 		case 'l':
 			describe_long = true;
+		case OPTION_SHORT:
+		case 's':
+			print_short = true;
 			break;
 		default:
 			usage(argv[0]);
@@ -180,7 +187,7 @@ int main(int argc, char **argv)
 
 	std::sort(results.begin(), results.end());
 
-	if (describe) {
+	if (describe && !print_short) {
 		auto total = results.size();
 		decltype(total) current = 1;
 
@@ -231,6 +238,11 @@ int main(int argc, char **argv)
 		std::string prefix = b.current ? "* " : "  ";
 		struct tm *tm;
 		char t[32];
+
+		if (print_short) {
+			std::cout << b.name << std::endl;
+			continue;
+		}
 
 		tm = localtime(&b.last);
 		strftime(t, 32, "%Y-%m-%d %H:%M:%S", tm);
