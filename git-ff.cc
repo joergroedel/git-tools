@@ -1,7 +1,13 @@
+// SPDX-License-Identifier: GPL-2.0+ */
 /*
+ * git-ff - A tool to fast-forward git branches
+ *
+ * Copyright (C) 2021 SUSE
+ *
+ * Author: Joerg Roedel <jroedel@suse.de>
+ *
  * TODO:
  *		- Man page
- *		- Documentation
  */
 #include <algorithm>
 #include <iostream>
