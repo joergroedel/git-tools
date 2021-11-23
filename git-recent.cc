@@ -1,3 +1,14 @@
+// SPDX-License-Identifier: GPL-2.0+ */
+/*
+ * git-recent - Show branches in order of their last modification
+ *
+ * Copyright (C) 2021 SUSE
+ *
+ * Author: Joerg Roedel <jroedel@suse.de>
+ *
+ * TODO:
+ *		- Man page
+ */
 #include <algorithm>
 #include <iostream>
 #include <iomanip>
