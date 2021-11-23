@@ -7,6 +7,6 @@
 #ifndef __VERSION_H
 #define __VERSION_H
 
-#define GITTTOOLSVERSION	"0"
+#define GITTTOOLSVERSION	"0.1"
 
 #endif
