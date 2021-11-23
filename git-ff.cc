@@ -62,7 +62,6 @@ static int tag_foreach_cb(const char *name, git_oid *oid, void *payload)
 
 	git_tag_free(tag);
 
-out:
 	return 0;
 }
 
@@ -73,7 +72,6 @@ static bool lookup_target(const char *name, git_repository *repo, git_oid *out_o
 	const git_oid *ref_oid;
 	bool ret = true;
 	std::string ref;
-	git_oid oid;
 	int error;
 
 	/* First check if it is a commit-id */
@@ -205,11 +203,12 @@ static int do_list(git_repository *repo, parameters &params)
 		    (!s.second.ff && params.only_ff))
 			continue;
 
-		if (params.verbose)
+		if (params.verbose) {
 			if (s.second.current)
 				std::cout << "* ";
 			else
 				std::cout << "  ";
+		}
 
 		if (!params.verbose) {
 			std::cout << s.first << std::endl;

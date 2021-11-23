@@ -1,5 +1,5 @@
 CXX          = g++
-CXXFLAGS     = -O3 -std=c++11
+CXXFLAGS     = -O3 -std=c++11 -Wall
 TARGETS      = git-recent git-ff
 INSTALL_DIR ?= ~/bin/
 
